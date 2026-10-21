@@ -1,0 +1,12 @@
+# Segredos: nunca versionar
+.env
+.env.*
+*.secret
+*secret*
+service_role*
+# Arquivos locais
+.DS_Store
+# Dados brutos com nomes de usuário (só data/rotulos.csv e data/amostra.csv, já limpos, vão para o GitHub)
+data/raw/
+data/*completo*.csv
+data/*bruto*.csv
