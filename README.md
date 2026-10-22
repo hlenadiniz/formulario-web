@@ -5,7 +5,7 @@ Formulário estático (GitHub Pages) + Supabase para guardar as respostas.
 ## 1. Supabase (uma vez)
 1. Crie uma conta em supabase.com e um projeto novo (plano gratuito).
 2. SQL Editor > New query: cole o conteúdo de `supabase.sql` e clique em Run.
-3. Project Settings > API: copie a **Project URL** e a chave **anon public** para `config.js`.
+3. Copie para `config.js` a **Project URL** (Project Settings > Data API) e a **Publishable key** `sb_publishable_...` (Project Settings > API Keys). Nunca use a Secret key.
 
 ## 2. Dados
 Coloque em `data/`:
