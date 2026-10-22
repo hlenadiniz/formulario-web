@@ -103,11 +103,7 @@ body{margin:0}
 .intro a{color:var(--accent)}
 .q{font-size:18px;font-weight:600;margin:0 0 10px;text-wrap:balance}
 .rotulo{display:flex;flex-direction:column;gap:10px}
-.term{position:relative;display:inline-block;align-self:flex-start;font-size:22px;font-weight:600;line-height:1.25;border-bottom:2px dotted var(--accent);cursor:help;outline:none}
-.tipbox{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:20;width:min(440px,calc(100vw - 48px));max-height:55vh;overflow:auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:14px;font-weight:400;line-height:1.5;cursor:default;box-shadow:0 6px 24px rgba(0,0,0,.18);overflow-wrap:anywhere}
-.term:hover .tipbox,.term:focus .tipbox,.term:focus-within .tipbox{display:block}
-.tipbox b{display:block;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 2px}
-.tipbox b:first-child{margin-top:0}
+.term{font-size:22px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
 details.def summary{cursor:pointer;color:var(--accent);font-size:14px}
 details.def .defbody{margin-top:8px;display:flex;flex-direction:column;gap:8px;max-width:68ch;overflow-wrap:anywhere}
 details.def .defbody b{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -218,15 +214,14 @@ function renderIntro(next){
       h("a",{href:"https://www.twitch.tv",target:"_blank",rel:"noopener"},"twitch.tv"),
       "). O chat é público e acontece em tempo real, enquanto as pessoas assistem às transmissões."),
     h("h2",{},"Considere o contexto"),
-    h("p",{},"Leia cada mensagem como ela seria lida no chat: são textos curtos e informais, em português ou misturando idiomas, com gírias, abreviações, memes, ironia, erros de grafia e expressões próprias da plataforma. Interprete o sentido pretendido, não só as palavras soltas."),
+    h("p",{},"Leia cada mensagem como ela seria lida no chat: são textos curtos e informais, em português, com gírias, abreviações, memes, ironia, erros de grafia e expressões próprias da plataforma. Interprete o sentido pretendido, não só as palavras soltas."),
     h("h2",{},"Os rótulos"),
-    h("p",{},"Cada mensagem aparece com um rótulo, tirado do ClassInd, o guia brasileiro de classificação indicativa. Cada rótulo tem um nome, uma descrição que define a situação e um exemplo. Em cada tela você pode ver a descrição e o exemplo passando o cursor sobre o nome do rótulo ou abrindo “Ver descrição e exemplo”."),
+    h("p",{},"Cada mensagem aparece com um rótulo, tirado do ClassInd, o guia brasileiro de classificação indicativa. Cada rótulo tem um nome, uma descrição que define a situação e um exemplo. Em cada tela, se tiver dúvida, abra “Ver descrição e exemplo” para ler a definição do rótulo."),
     h("h2",{},"O que você vai fazer"),
     h("p",{},"Para cada mensagem, responda Sim ou Não: essa mensagem pode ser enquadrada naquele rótulo? Para decidir:"),
     h("ul",{},
       h("li",{},"Mencionar o tema do rótulo não basta. A mensagem deve expressar, de forma explícita ou implícita, a situação descrita no rótulo."),
-      h("li",{},"Os exemplos ilustram a definição e não esgotam as situações possíveis."),
-      h("li",{},"A mensagem pode estar em outro idioma. Compare pelo sentido.")),
+      h("li",{},"Os exemplos ilustram a definição e não esgotam as situações possíveis.")),
     h("p",{class:"hint"},"Suas respostas são salvas na hora. Você pode voltar e mudar qualquer resposta."),
     h("div",{class:"row"},h("button",{class:"btn primary",id:"intro-ok",onclick:()=>{ls.set("kids_intro","1");next();}},first?"Entendi, começar":"Voltar às mensagens")));
   $app.replaceChildren(h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")))),body);
@@ -272,9 +267,6 @@ function renderItem(){
     h("div",{class:"progress"},h("i",{style:`width:${n?100*done/n:0}%`})));
   if(!n){ $app.replaceChildren(topbar,h("div",{class:"card empty"},h("p",{class:"lead"},"Não há itens para este número."))); return; }
   const it=S.mine[S.idx], lab=labelFor(it), cur=S.resp.get(it.i);
-  const tip = h("span",{class:"tipbox",role:"tooltip"},
-    h("b",{},"Descrição"), lab.desc,
-    lab.ex?h("b",{},"Exemplo"):null, lab.ex||null);
   const defs = h("details",{class:"def",open:ls.get("kids_def_open")==="1"?true:null},
     h("summary",{},"Ver descrição e exemplo"),
     h("div",{class:"defbody"},h("div",{},h("b",{},"Descrição"),h("div",{},lab.desc)),
@@ -283,7 +275,7 @@ function renderItem(){
   const card = h("div",{class:"card",style:"display:flex;flex-direction:column;gap:18px"},
     h("div",{},h("div",{class:"sec"},`Mensagem · ${S.idx+1} de ${n}`),h("div",{class:"msg"},it.m)),
     h("div",{class:"rotulo"},h("div",{class:"sec",style:"margin:0"},"Rótulo"),
-      h("span",{class:"term",tabindex:"0"},lab.name,tip), defs));
+      h("div",{class:"term"},lab.name), defs));
   const answer = h("div",{},h("p",{class:"q"},"Essa mensagem pode ser enquadrada neste rótulo?"),
     h("div",{class:"ans"},
       h("button",{class:"yes"+(cur==="SIM"?" on":""),onclick:()=>answer_("SIM")},"Sim",h("small",{},"tecla S")),
