@@ -1,0 +1,16 @@
+# Segredos: nunca versionar
+.env
+.env.*
+*.secret
+*secret*
+service_role*
+# Arquivos locais
+.DS_Store
+# Dados: a amostra NÃO vai para o GitHub (fica só no Supabase). Só data/rotulos.csv é versionado.
+data/amostra*.csv
+data/raw/
+data/*completo*.csv
+data/*bruto*.csv
+# Códigos dos anotadores e SQL com os hashes
+codigos*.txt
+supabase_codigos.sql
