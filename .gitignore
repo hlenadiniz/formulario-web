@@ -14,3 +14,4 @@ data/*bruto*.csv
 # Códigos dos anotadores e SQL com os hashes
 codigos*.txt
 supabase_codigos.sql
+data/importar_*.sql

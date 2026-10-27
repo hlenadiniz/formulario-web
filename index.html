@@ -94,6 +94,9 @@ input[type=file],input[type=number]{font:inherit;color:var(--fg);background:var(
 .lab .ans button{min-height:48px;font-size:17px}
 .lab.done{border-left:4px solid var(--accent)}
 body{margin:0}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.person{border:2px solid var(--line);background:var(--surface);border-radius:6px;padding:16px 10px;font-size:18px;font-weight:600;overflow-wrap:anywhere}
+.person:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 /* ---- validação: entrada, rótulo com definição acessível ---- */
 .intro{display:flex;flex-direction:column;gap:14px;max-width:68ch}
 .intro h1{font-size:24px}
@@ -116,8 +119,7 @@ details.def .defbody b{font:500 11px var(--mono);letter-spacing:.08em;text-trans
 .lk3:hover,.lk3.on{border-color:var(--muted);background:var(--code-bg)}
 .lk4:hover,.lk4.on,.lk5:hover,.lk5.on{border-color:var(--yes);background:var(--yes-soft);color:var(--yes)}
 @media (max-width:560px){.likert{grid-template-columns:1fr}.lk{flex-direction:row;justify-content:flex-start;text-align:left;min-height:52px;padding:10px 14px}.lk b{min-width:24px}}
-.login{display:flex;flex-direction:column;gap:14px;max-width:460px}
-.login input{font:500 20px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);width:100%}
+.login{display:flex;flex-direction:column;gap:14px}
 .login .err{color:var(--no);font-size:14px;min-height:20px}
 </style></head>
 <body><div class="wrap" id="app"><div class="card empty"><p class="lead">Carregando…</p></div></div>
@@ -163,7 +165,7 @@ function pick(row, names){
 
 
 /* ---------- Supabase (REST direto) ---------- */
-const RPC = CFG.SUPABASE_URL.replace(/\/$/,"") + "/rest/v1/rpc/";
+const RPC = CFG.SUPABASE_URL.replace(/\/+$/,"").replace(/\/rest\/v1$/,"") + "/rest/v1/rpc/";   // aceita a URL com ou sem /rest/v1
 const HDR = { apikey:CFG.SUPABASE_ANON_KEY, "Content-Type":"application/json" };
 // Chave nova (sb_publishable_...) vai só em "apikey"; a antiga (JWT, eyJ...) também em Authorization.
 if (/^eyJ/.test(CFG.SUPABASE_ANON_KEY)) HDR.Authorization = "Bearer " + CFG.SUPABASE_ANON_KEY;
@@ -174,7 +176,7 @@ async function rpc(fn, body){
 }
 
 /* ---------- estado ---------- */
-const S = { labels:{}, ann:null, code:null, resp:new Map(), idx:0, mine:[], pending:[], flushing:false, saveErr:null };
+const S = { labels:{}, ann:null, view:"", resp:new Map(), idx:0, mine:[], pending:[], flushing:false, saveErr:null };
 
 async function init(){
   try{
@@ -185,29 +187,58 @@ async function init(){
     for(const r of lrows){ const name=r[nk]; if(!name) continue; const k=norm(name); if(S.labels[k]) continue;
       S.labels[k]={name,desc:(r[dk]||"").replace(/\s*\n\s*/g," "),ex:(r[ek]||"").replace(/\s*\n\s*/g," ")}; }
   }catch(e){ return renderMsg("Não consegui carregar os dados do formulário: "+e.message); }
-  try{ S.pending = JSON.parse(ls.get("kids_pending")||"[]").filter(p=>p.c); }catch(e){ S.pending=[]; }
-  if(ls.get("kids_intro")!=="1") return renderIntro(proceed);
-  proceed();
-}
-function proceed(){
-  const c=ls.get("kids_code");
-  if(c) login(c,true); else renderLogin();
-}
-function normCode(c){ return String(c||"").trim().toUpperCase().replace(/[\s-]+/g,""); }
-async function login(code,auto){
-  const c=normCode(code); renderMsg("Entrando…");
-  let d;
-  try{ d = await rpc("entrar",{p_codigo:c}); }
-  catch(e){ return renderLogin("Não consegui conectar ao servidor. Confira a internet e tente de novo."); }
-  if(!d){ if(auto) ls.set("kids_code",""); return renderLogin(auto?"":"Código não reconhecido. Confira e tente de novo."); }
-  ls.set("kids_code",c); startAnnotating(d,c);
+  try{ S.pending = JSON.parse(ls.get("kids_pending")||"[]").filter(p=>p.a); }catch(e){ S.pending=[]; }
+  renderPeople();
 }
 
 function renderMsg(t){ $app.replaceChildren(h("div",{class:"card empty"},h("p",{class:"lead"},t))); }
-/* ---------- tela de entrada (uma vez) ---------- */
-function renderIntro(next){
+
+/* ---------- 1. escolha do nome ---------- */
+async function renderPeople(msg){
+  S.view="people"; S.ann=null; renderMsg("Carregando…");
+  let list;
+  try{ list = await rpc("listar_anotadores",{}); }
+  catch(e){ return $app.replaceChildren(h("div",{class:"card empty"},h("p",{class:"lead"},"Não consegui conectar ao servidor ("+(e&&e.message||"sem resposta")+"). Confira a internet e tente de novo."),
+    h("div",{class:"row"},h("button",{class:"btn primary",onclick:()=>renderPeople()},"Tentar de novo")))); }
+  flush();
+  $app.replaceChildren(
+    h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")),
+      h("button",{class:"linkbtn",onclick:()=>renderIntro(()=>renderPeople(),"Voltar")},"Ver instruções"))),
+    h("div",{class:"card login"},
+      h("h1",{},"Quem é você?"),
+      h("p",{class:"lead"},"Clique no seu nome para começar ou continuar de onde parou. Seu progresso fica salvo e vale em qualquer aparelho."),
+      msg?h("div",{class:"err"},msg):null,
+      list.length ? h("div",{class:"people"},list.map(p=>h("button",{class:"person",onclick:()=>enter(p)},p.nome)))
+                  : h("p",{class:"hint"},"Nenhum anotador cadastrado ainda.")));
+}
+
+async function enter(p){
+  renderMsg("Entrando…");
+  let d;
+  try{ d = await rpc("entrar",{p_anotador:p.id}); }
+  catch(e){ return renderPeople("Não consegui conectar ao servidor ("+(e&&e.message||"sem resposta")+"). Tente de novo."); }
+  if(!d) return renderPeople("Anotador não encontrado. Atualize a lista e tente de novo.");
+  startAnnotating(d);
+}
+
+function startAnnotating(d){
+  S.ann=d.anotador; S.saveErr=null;
+  S.mine = d.itens.map(x=>({i:x.item,m:x.mensagem,l:x.rotulo,p:x.persona}));
+  S.resp = new Map(d.respostas.map(r=>[r.item,r.resposta]));
+  for(const p of S.pending) if(p.a===S.ann.id) S.resp.set(p.item,p.resposta);
+  // 3. primeira vez: primeira pergunta; senão, a primeira ainda sem resposta (onde parou)
+  const first = S.mine.findIndex(x=>!S.resp.has(x.i));
+  S.idx = first<0 ? 0 : first;
+  flush();
+  // 2. instruções: abrem sozinhas na 1ª vez deste nome neste aparelho; depois ficam em "Ver instruções"
+  const k="kids_intro_"+S.ann.id;
+  if(ls.get(k)!=="1") renderIntro(()=>{ls.set(k,"1");renderItem();},"Entendi, começar");
+  else renderItem();
+}
+
+/* ---------- instruções ---------- */
+function renderIntro(next,label){
   S.view="intro";
-  const first = ls.get("kids_intro")!=="1";
   const body = h("div",{class:"card intro"},
     h("h1",{},"Antes de começar"),
     h("p",{},"As mensagens que você vai ler foram coletadas do chat ao vivo da Twitch (",
@@ -223,33 +254,9 @@ function renderIntro(next){
       h("li",{},"Mencionar o tema do rótulo não basta. A mensagem deve expressar, de forma explícita ou implícita, a situação descrita no rótulo."),
       h("li",{},"Os exemplos ilustram a definição e não esgotam as situações possíveis.")),
     h("p",{class:"hint"},"Suas respostas são salvas na hora. Você pode voltar e mudar qualquer resposta."),
-    h("div",{class:"row"},h("button",{class:"btn primary",id:"intro-ok",onclick:()=>{ls.set("kids_intro","1");next();}},first?"Entendi, começar":"Voltar às mensagens")));
+    h("div",{class:"row"},h("button",{class:"btn primary",id:"intro-ok",onclick:next},label||"Voltar")));
   $app.replaceChildren(h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")))),body);
   window.scrollTo(0,0);
-}
-
-function renderLogin(msg){
-  S.view="login"; S.ann=null;
-  const inp=h("input",{id:"code",type:"text",autocomplete:"off",autocapitalize:"characters",spellcheck:"false",placeholder:"XXXX-XXXX","aria-label":"Código pessoal"});
-  const err=h("div",{class:"err",id:"code-err"},msg||"");
-  const form=h("form",{class:"card login",onsubmit:e=>{e.preventDefault(); const v=inp.value; if(!normCode(v)){err.textContent="Digite o seu código.";return;} err.textContent=""; login(v,false);}},
-    h("h1",{},"Entrar"),
-    h("p",{class:"lead"},"Digite o código pessoal que você recebeu. Ele guarda o seu progresso: com o mesmo código, em qualquer aparelho, você continua de onde parou."),
-    inp, err, h("div",{class:"row"},h("button",{class:"btn primary",type:"submit"},"Entrar")));
-  $app.replaceChildren(
-    h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")),
-      h("button",{class:"linkbtn",onclick:()=>renderIntro(()=>renderLogin())},"Ver instruções"))),
-    form);
-  inp.focus();
-}
-
-function startAnnotating(d,code){
-  S.ann=d.slot; S.code=code; S.saveErr=null;
-  S.mine = d.itens.map(x=>({i:x.item,m:x.mensagem,l:x.rotulo,p:x.persona}));
-  S.resp = new Map(d.respostas.map(r=>[r.item,r.resposta]));
-  for(const p of S.pending) if(p.c===code) S.resp.set(p.item,p.resposta);
-  const first = S.mine.findIndex(x=>!S.resp.has(x.i));
-  S.idx = first<0 ? 0 : first; flush(); renderItem();
 }
 
 function labelFor(it){
@@ -257,16 +264,17 @@ function labelFor(it){
   return { name:L?L.name:it.l, desc:L?L.desc:"(descrição não disponível)", ex:L?L.ex:"" };
 }
 
+/* ---------- 3. perguntas ---------- */
 function renderItem(){
   S.view="item";
   const n=S.mine.length, done=S.mine.filter(x=>S.resp.has(x.i)).length, finished=done===n&&n>0;
   const topbar = h("div",{class:"topbar"},
-    h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},`anotador ${S.ann} · ${done}/${n} respondidos`)),
+    h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},`${S.ann.nome} · ${done}/${n} respondidos`)),
       h("div",{class:"row"},
-        h("button",{class:"linkbtn",onclick:()=>renderIntro(renderItem)},"Ver instruções"),
-        h("button",{class:"linkbtn",onclick:()=>{ls.set("kids_code","");renderLogin();}},"Sair"))),
+        h("button",{class:"linkbtn",onclick:()=>renderIntro(renderItem,"Voltar às mensagens")},"Ver instruções"),
+        h("button",{class:"linkbtn",onclick:()=>renderPeople()},"Trocar de pessoa"))),
     h("div",{class:"progress"},h("i",{style:`width:${n?100*done/n:0}%`})));
-  if(!n){ $app.replaceChildren(topbar,h("div",{class:"card empty"},h("p",{class:"lead"},"Não há itens para este código."))); return; }
+  if(!n){ $app.replaceChildren(topbar,h("div",{class:"card empty"},h("p",{class:"lead"},"Ainda não há itens para você. Avise quem coordena o projeto."))); return; }
   const it=S.mine[S.idx], lab=labelFor(it), cur=S.resp.get(it.i);
   const defs = h("details",{class:"def",open:ls.get("kids_def_open")==="1"?true:null},
     h("summary",{},"Ver descrição e exemplo"),
@@ -304,8 +312,8 @@ function go(i){ S.idx=Math.max(0,Math.min(S.mine.length-1,i)); renderItem(); }
 function answer_(r){
   const it=S.mine[S.idx]; if(!it) return;
   S.resp.set(it.i,r); S.saveErr=null;
-  S.pending = S.pending.filter(p=>!(p.c===S.code&&p.item===it.i));
-  S.pending.push({c:S.code,item:it.i,resposta:r});
+  S.pending = S.pending.filter(p=>!(p.a===S.ann.id&&p.item===it.i));
+  S.pending.push({a:S.ann.id,item:it.i,resposta:r});
   ls.set("kids_pending",JSON.stringify(S.pending));
   const wasIdx=S.idx, next=S.idx<S.mine.length-1?S.idx+1:S.idx;
   renderItem(); flush();
@@ -316,8 +324,8 @@ async function flush(){
   if(S.flushing||!S.pending.length) return; S.flushing=true;
   try{
     while(S.pending.length){
-      const code=S.pending[0].c, batch=S.pending.filter(p=>p.c===code).slice(0,50);
-      await rpc("salvar",{p_codigo:code,p_respostas:batch.map(p=>({item:p.item,resposta:p.resposta}))});
+      const who=S.pending[0].a, batch=S.pending.filter(p=>p.a===who).slice(0,50);
+      await rpc("salvar",{p_anotador:who,p_respostas:batch.map(p=>({item:p.item,resposta:p.resposta}))});
       S.pending = S.pending.filter(p=>!batch.includes(p));
       ls.set("kids_pending",JSON.stringify(S.pending));
     }
