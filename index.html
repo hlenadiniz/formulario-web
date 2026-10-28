@@ -188,7 +188,7 @@ async function init(){
       S.labels[k]={name,desc:(r[dk]||"").replace(/\s*\n\s*/g," "),ex:(r[ek]||"").replace(/\s*\n\s*/g," ")}; }
   }catch(e){ return renderMsg("Não consegui carregar os dados do formulário: "+e.message); }
   try{ S.pending = JSON.parse(ls.get("kids_pending")||"[]").filter(p=>p.a); }catch(e){ S.pending=[]; }
-  renderPeople();
+  renderIntro(()=>renderPeople(),"Entendi, escolher meu nome");   // 1ª tela: instruções
 }
 
 function renderMsg(t){ $app.replaceChildren(h("div",{class:"card empty"},h("p",{class:"lead"},t))); }
@@ -230,10 +230,7 @@ function startAnnotating(d){
   const first = S.mine.findIndex(x=>!S.resp.has(x.i));
   S.idx = first<0 ? 0 : first;
   flush();
-  // 2. instruções: abrem sozinhas na 1ª vez deste nome neste aparelho; depois ficam em "Ver instruções"
-  const k="kids_intro_"+S.ann.id;
-  if(ls.get(k)!=="1") renderIntro(()=>{ls.set(k,"1");renderItem();},"Entendi, começar");
-  else renderItem();
+  renderItem();
 }
 
 /* ---------- instruções ---------- */
