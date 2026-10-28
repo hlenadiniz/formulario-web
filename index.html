@@ -108,8 +108,8 @@ body{margin:0}
 .rotulo{display:flex;flex-direction:column;gap:10px}
 .term{font-size:22px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
 details.def summary{cursor:pointer;color:var(--accent);font-size:14px}
-details.def .defbody{margin-top:8px;display:flex;flex-direction:column;gap:8px;max-width:68ch;overflow-wrap:anywhere}
-details.def .defbody b{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.defbody{margin-top:8px;display:flex;flex-direction:column;gap:8px;max-width:68ch;overflow-wrap:anywhere}
+.defbody b{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .hint{font-size:13px;color:var(--muted)}
 .slots button.last{border-color:var(--accent);background:var(--accent-soft)}
 .likert{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
@@ -247,7 +247,7 @@ function renderIntro(next,label){
     h("h2",{},"Considere o contexto"),
     h("p",{},"Leia cada mensagem como ela seria lida no chat: são textos curtos e informais, em português, com gírias, abreviações, memes, ironia, erros de grafia e expressões próprias da plataforma. Interprete o sentido pretendido, não só as palavras soltas."),
     h("h2",{},"Os rótulos"),
-    h("p",{},"Cada mensagem aparece com um rótulo, tirado do ClassInd, o guia brasileiro de classificação indicativa. Cada rótulo tem um nome, uma descrição que define a situação e um exemplo. Em cada tela, se tiver dúvida, abra “Ver descrição e exemplo” para ler a definição do rótulo."),
+    h("p",{},"Cada mensagem aparece com um rótulo, tirado do ClassInd, o guia brasileiro de classificação indicativa. Cada rótulo tem um nome, uma descrição que define a situação e um exemplo. Em cada tela, leia a descrição e o exemplo do rótulo antes de responder."),
     h("h2",{},"O que você vai fazer"),
     h("p",{},"Para cada mensagem, indique o quanto você concorda que o rótulo apresentado descreve corretamente a mensagem, de 1 (discordo totalmente) a 5 (concordo totalmente). Para decidir:"),
     h("ul",{},
@@ -276,11 +276,8 @@ function renderItem(){
     h("div",{class:"progress"},h("i",{style:`width:${n?100*done/n:0}%`})));
   if(!n){ $app.replaceChildren(topbar,h("div",{class:"card empty"},h("p",{class:"lead"},"Ainda não há itens para você. Avise quem coordena o projeto."))); return; }
   const it=S.mine[S.idx], lab=labelFor(it), cur=S.resp.get(it.i);
-  const defs = h("details",{class:"def",open:ls.get("kids_def_open")==="1"?true:null},
-    h("summary",{},"Ver descrição e exemplo"),
-    h("div",{class:"defbody"},h("div",{},h("b",{},"Descrição"),h("div",{},lab.desc)),
-      lab.ex?h("div",{},h("b",{},"Exemplo"),h("div",{},lab.ex)):null));
-  defs.addEventListener("toggle",()=>ls.set("kids_def_open",defs.open?"1":"0"));
+  const defs = h("div",{class:"defbody"},h("div",{},h("b",{},"Descrição"),h("div",{},lab.desc)),
+      lab.ex?h("div",{},h("b",{},"Exemplo"),h("div",{},lab.ex)):null);
   const card = h("div",{class:"card",style:"display:flex;flex-direction:column;gap:18px"},
     h("div",{},h("div",{class:"sec"},`Mensagem · ${S.idx+1} de ${n}`),h("div",{class:"msg"},it.m)),
     h("div",{class:"rotulo"},h("div",{class:"sec",style:"margin:0"},"Rótulo"),
