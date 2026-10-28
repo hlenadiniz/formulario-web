@@ -8,14 +8,18 @@ Dois modos (escolha um):
 
   A) Gerar SQL para colar no SQL Editor do Supabase (não precisa de chave nenhuma):
        python3 scripts/importar_amostra.py data/amostra.csv --sql
-     Cria data/importar_itens.sql (fica fora do Git, ver .gitignore).
+     Cria data/importar_<nome-do-csv>.sql (fica fora do Git, ver .gitignore).
 
   B) Enviar direto pela API, usando a chave SECRET do projeto (nunca coloque em arquivo versionado):
        export SUPABASE_URL="https://xxxx.supabase.co"
        export SUPABASE_SECRET_KEY="sb_secret_..."
        python3 scripts/importar_amostra.py data/amostra.csv
 
-Colunas aceitas no CSV: rotulo (ou label), message_content (ou mensagem), persona (opcional).
+Colunas aceitas no CSV: rotulo (ou label), message_content (ou mensagem, examples), persona (opcional).
+
+Itens ESPECIAIS (controle): importe o CSV deles com --especial. O anotador não vê a marca; ela aparece só na
+coluna `especial` da tabela `respostas` exportada. Exemplo:
+  python3 scripts/importar_amostra.py data/amostra_especial.csv --sql --especial
 """
 import csv, json, os, sys, argparse, urllib.request, urllib.error
 
@@ -26,7 +30,7 @@ def achar(cols, nomes):
             return mapa[n]
     return None
 
-def ler(path):
+def ler(path, especial=False):
     with open(path, encoding="utf-8-sig", newline="") as f:
         amostra = f.read(4096); f.seek(0)
         try:
@@ -35,7 +39,7 @@ def ler(path):
             dialect = csv.excel
         rd = csv.DictReader(f, dialect=dialect)
         cr = achar(rd.fieldnames, ["rotulo", "rótulo", "label"])
-        cm = achar(rd.fieldnames, ["message_content", "mensagem", "message"])
+        cm = achar(rd.fieldnames, ["message_content", "mensagem", "message", "examples", "example"])
         cp = achar(rd.fieldnames, ["persona"])
         if not cr or not cm:
             sys.exit(f"Não achei as colunas de rótulo e mensagem. Colunas: {rd.fieldnames}")
@@ -48,7 +52,7 @@ def ler(path):
             if chave in vistos:
                 dup += 1; continue
             vistos.add(chave)
-            linhas.append({"rotulo": rot, "message_content": msg, "persona": (r[cp].strip() or None) if cp else None})
+            linhas.append({"rotulo": rot, "message_content": msg, "persona": (r[cp].strip() or None) if cp else None, "especial": especial})
     print(f"{len(linhas)} itens únicos ({dup} repetidos e {vazias} vazios descartados).")
     return linhas
 
@@ -59,8 +63,8 @@ def gerar_sql(linhas, saida):
     with open(saida, "w", encoding="utf-8") as f:
         f.write("-- Gerado por scripts/importar_amostra.py. Cole no SQL Editor do Supabase. Pode rodar mais de uma vez.\n")
         for i in range(0, len(linhas), 300):
-            vals = ",\n".join(f"({lit(l['message_content'])},{lit(l['rotulo'])},{lit(l['persona'])})" for l in linhas[i:i+300])
-            f.write(f"insert into public.itens (message_content, rotulo, persona) values\n{vals}\non conflict (rotulo, message_content) do nothing;\n\n")
+            vals = ",\n".join(f"({lit(l['message_content'])},{lit(l['rotulo'])},{lit(l['persona'])},{'true' if l['especial'] else 'false'})" for l in linhas[i:i+300])
+            f.write(f"insert into public.itens (message_content, rotulo, persona, especial) values\n{vals}\non conflict (rotulo, message_content) do nothing;\n\n")
     print(f"SQL em {saida}. Cole no SQL Editor (se o editor reclamar do tamanho, divida o arquivo em partes).")
 
 def enviar(linhas):
@@ -80,8 +84,9 @@ def enviar(linhas):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("csv"); ap.add_argument("--sql", action="store_true", help="gera data/importar_itens.sql em vez de enviar")
+    ap.add_argument("csv"); ap.add_argument("--sql", action="store_true", help="gera data/importar_<arquivo>.sql em vez de enviar")
+    ap.add_argument("--especial", action="store_true", help="marca todos os itens deste CSV como especiais (controle)")
     a = ap.parse_args()
-    dados = ler(a.csv)
-    if a.sql: gerar_sql(dados, os.path.join(os.path.dirname(os.path.abspath(a.csv)), "importar_itens.sql"))
+    dados = ler(a.csv, a.especial)
+    if a.sql: gerar_sql(dados, os.path.join(os.path.dirname(os.path.abspath(a.csv)), "importar_" + os.path.splitext(os.path.basename(a.csv))[0] + ".sql"))
     else: enviar(dados)
