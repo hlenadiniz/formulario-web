@@ -100,6 +100,9 @@ body{margin:0}
 /* ---- validação: entrada, rótulo com definição acessível ---- */
 .intro{display:flex;flex-direction:column;gap:14px;max-width:68ch}
 .intro h1{font-size:24px}
+.tcle{display:flex;flex-direction:column;gap:12px}
+.tcle p,.tcle ul{margin:0}
+.tcle ul{padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .intro h2{font-size:15px;margin:6px 0 0;font-weight:600}
 .intro p,.intro ul{margin:0}
 .intro ul{padding-left:20px;display:flex;flex-direction:column;gap:6px}
@@ -188,7 +191,7 @@ async function init(){
       S.labels[k]={name,desc:(r[dk]||"").replace(/\s*\n\s*/g," "),ex:(r[ek]||"").replace(/\s*\n\s*/g," ")}; }
   }catch(e){ return renderMsg("Não consegui carregar os dados do formulário: "+e.message); }
   try{ S.pending = JSON.parse(ls.get("kids_pending")||"[]").filter(p=>p.a); }catch(e){ S.pending=[]; }
-  renderIntro(()=>renderPeople(),"Entendi, escolher meu nome");   // 1ª tela: instruções
+  renderIntro(()=>renderPeople(),"Concordo com o TCLE e desejo prosseguir");   // 1ª tela: instruções
 }
 
 function renderMsg(t){ $app.replaceChildren(h("div",{class:"card empty"},h("p",{class:"lead"},t))); }
@@ -203,7 +206,7 @@ async function renderPeople(msg){
   flush();
   $app.replaceChildren(
     h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")),
-      h("button",{class:"linkbtn",onclick:()=>renderIntro(()=>renderPeople(),"Voltar")},"Ver instruções"))),
+      h("button",{class:"linkbtn",onclick:()=>renderIntro(()=>renderPeople(),"Voltar")},"Ver TCLE com instruções"))),
     h("div",{class:"card login"},
       h("h1",{},"Quem é você?"),
       h("p",{class:"lead"},"Clique no seu nome para começar ou continuar de onde parou. Seu progresso fica salvo e vale em qualquer aparelho."),
@@ -233,24 +236,57 @@ function startAnnotating(d){
   renderItem();
 }
 
-/* ---------- instruções ---------- */
+/* ---------- TCLE e instruções ---------- */
+const TCLE_HTML = `<p>Prezado(a) participante,</p>
+<p>Você está sendo convidado(a) a participar da pesquisa “<strong>Crianças e Adolescentes em Plataformas de Mídias Sociais: Perigos, Desafios e Oportunidades</strong>", sendo executado no Departamento de Ciência da Computação (DCC) da Universidade Federal de Minas Gerais (UFMG) sob coordenação da professora Jussara M. Almeida. Apesar de diversos esforços para melhorar o ambiente online para crianças e adolescentes (por exemplo, várias ferramentas de controle parental), estatísticas recentes revelam uma crescente exposição deste público ao ambiente online e, muitas vezes, a conteúdo inapropriado (e.g., violência, drogas, discurso de ódio, conteúdo sexual, etc). Este projeto de pesquisa é motivado pela necessidade de tornar as plataformas de mídias sociais um ambiente mais seguro para crianças e adolescentes. Assim, convido você a responder este questionário online, com o objetivo de avaliar a qualidade dos rótulos atribuídos a mensagens que representam potenciais riscos e danos para crianças e adolescentes em plataformas de mídias sociais.</p>
+<p><strong>Sobre as mensagens:</strong></p>
+<p>As mensagens que você vai ler foram coletadas de chats públicos de transmissões ao vivo da Twitch (twitch.tv). Nesses chats, as pessoas conversam em tempo real enquanto assistem às transmissões. São textos curtos e informais, em português, que podem conter gírias, abreviações, memes, ironias, erros de grafia e expressões próprias da plataforma. Procure interpretar o sentido da mensagem como um todo, considerando essas características, em vez de se basear apenas em palavras isoladas.</p>
+<p><strong>Sobre os rótulos:</strong></p>
+<p>Cada mensagem será apresentada com um rótulo baseado no guia brasileiro de Classificação Indicativa (ClassInd). Cada rótulo tem um nome, uma descrição e exemplos descritivos. O ClassInd foi desenvolvido para a classificação de obras audiovisuais. Por isso, suas descrições e seus exemplos podem fazer referência a situações presentes em cenas de filmes, jogos e outras obras. Nosso objetivo é adaptar esses rótulos ao contexto das plataformas de mídias sociais, considerando como as situações descritas podem aparecer em mensagens de texto.</p>
+<p><strong>O que você vai fazer:</strong></p>
+<p>Sua tarefa é avaliar se o rótulo apresentado se aplica ao conteúdo da mensagem e selecionar a opção correspondente à sua avaliação. A presença do rótulo na tela não significa que ele esteja correto: cabe a você avaliar essa associação. Suas respostas contribuirão para a adaptação dos rótulos ao contexto das plataformas de mídias sociais. Por isso, leia cada mensagem com atenção e responda com cuidado, priorizando a qualidade da avaliação.</p>
+<p>Ao responder, siga estas orientações:</p>
+<ul>
+<li>Use a definição do rótulo como referência. Baseie sua resposta nos critérios apresentados, e não apenas em sua opinião pessoal sobre o conteúdo. Consulte a descrição e os exemplos em “Ver descrição e exemplo”.</li>
+<li>Considere a mensagem inteira. A presença de uma palavra ou expressão, por si só, não é suficiente para determinar se o rótulo se aplica.</li>
+<li>Observe o tom e o uso da linguagem. Gírias, memes e ironias podem alterar o sentido de uma mensagem. Ao mesmo tempo, o tom de brincadeira não exclui, por si só, a aplicação do rótulo.</li>
+<li>Use apenas o contexto disponível. Não suponha acontecimentos da transmissão, intenções ou características das pessoas que não possam ser identificados no material apresentado.</li>
+<li>Avalie cada mensagem individualmente. Não presuma que mensagens anteriores ou seguintes façam parte da mesma conversa.</li>
+<li>Mantenha os mesmos critérios ao longo da tarefa. Em caso de dúvida, consulte novamente a descrição e os exemplos antes de responder.</li>
+</ul>
+<p><strong>Como escolher sua resposta</strong></p>
+<p>Considere a seguinte afirmação: “O rótulo apresentado se aplica ao conteúdo desta mensagem.”:</p>
+<ul>
+<li><strong>Concordo totalmente</strong>: use quando considerar que o rótulo se aplica claramente à mensagem.</li>
+<li><strong>Concordo parcialmente</strong>: use quando considerar que o rótulo se aplica à mensagem, mas com ressalvas.</li>
+<li><strong>Neutro — nem concordo nem discordo</strong>: use quando, mesmo após consultar a definição e os exemplos, não conseguir decidir se o rótulo se aplica.</li>
+<li><strong>Discordo parcialmente</strong>: use quando considerar que o rótulo não se aplica à mensagem, mas com ressalvas.</li>
+<li><strong>Discordo totalmente</strong>: use quando considerar que o rótulo claramente não se aplica à mensagem.</li>
+</ul>
+<p>Sua resposta deve indicar se o rótulo se aplica à mensagem, e não se você concorda com a opinião ou com o comportamento expresso nela. O objetivo é avaliar o conteúdo da mensagem, e não julgar a pessoa que a escreveu.</p>
+<p><strong>Veja um exemplo de mensagem e rotulação:</strong></p>
+<p>Mensagem: "pode divulgar bet?"</p>
+<p>Rótulo recebido: ESTÍMULO À PRÁTICA DE APOSTAS E JOGOS DE AZAR</p>
+<p>Descrição do rótulo: A prática pode ocorrer tanto em ambientes interativos (como jogos e aplicativos, direcionando o usuário a plataformas externas de apostas) quanto em programas televisivos (ou outras mídias audiovisuais) que simulam ou incentivam a realização de apostas com moeda real, ou apresenta probabilidades, rankings ou resultados que reproduzem a lógica e a dinâmica de jogos de azar. Em todos os casos, o fator de risco está na familiarização e no incentivo à prática de apostas ou jogos de azar, potencialmente envolvendo transações com moeda real.</p>
+<p>Exemplo Descritivo: 1. Um programa oferece uma os resultados de um determinado time e outro, sugerindo qual seria o provável vencedor em uma eventual disputa entre eles.</p>
+<p><strong>Participação voluntária e conteúdos sensíveis:</strong></p>
+<p>Embora tenham sido coletadas em chats públicos da Twitch, as mensagens podem conter temas sensíveis ou causar desconforto. Entre esses conteúdos estão manifestações de discriminação, como homofobia e racismo, linguagem pejorativa e relatos potencialmente perturbadores. Sua participação é voluntária, e nenhuma resposta é obrigatória. Se sentir cansaço ou desconforto, você pode deixar de responder a qualquer item, fazer uma pausa ou encerrar sua participação a qualquer momento, sem qualquer prejuízo. Se desejar, poderá retomar a atividade em outro momento.</p>
+<p><strong>Dados coletados:</strong> Suas informações pessoais não precisarão ser fornecidas, mas caso algum dado seja fornecido, ele será mantido em sigilo. Os dados obtidos serão utilizados para a construção de uma taxonomia e posteriormente um método de detecção de riscos e danos. Estes resultados poderão ser reportados em eventuais publicações científicas sobre o projeto. Os dados serão armazenados em forma digital na instituição pela equipe de pesquisa durante 5 (cinco) anos e após, totalmente destruídos (conforme preconiza a Resolução 466/2012).</p>
+<p><strong>Custos e Benefícios:</strong> Você não terá nenhum custo financeiro e nem receberá nenhum auxílio financeiro ou benefícios pessoais diretos ao participar desta pesquisa. Através da sua participação, você estará compartilhando sua análise dos tipos de conteúdo ou o que considera apropriado ou não para crianças. Assim, suas visões e perspectivas serão levadas em conta nesta pesquisa, e consequentemente, nas soluções propostas para tornar as plataformas de mídias sociais (e.g. Instagram, Youtube, Twitch, entre outras) mais seguras para crianças e adolescentes. Você pode ser indiretamente beneficiado, na medida em que os resultados da pesquisa podem contribuir para a melhoria do ambiente digital ao qual seus próprios filhos, caso tenha ou seja responsável legal por alguma criança ou adolescente, e familiares estejam expostos.</p>
+<p><strong>Riscos:</strong> Ao responder o questionário você pode se sentir cansado ou não se sentir à vontade para responder alguma pergunta. Neste caso, você pode interromper a qualquer momento o preenchimento do questionário, voltando a respondê-lo em outro momento, se assim o desejar. Nenhuma pergunta é obrigatória. Embora os conteúdos exibidos neste questionário sejam públicos e disponíveis nas plataformas de mídias sociais, é possível que os mesmos apresentem algum grau de sensibilidade com tópicos que possam causar desconforto, como manifestações de discriminação, homofobia ou racismo, linguagem pejorativa ou narrativas potencialmente perturbadoras. É dada a garantia do anonimato e reafirmada a possibilidade de você se recusar a responder qualquer pergunta ou interromper a pesquisa, sem qualquer prejuízo. Caso haja danos decorrentes da sua participação na sua pesquisa, você tem direito a buscar indenização.</p>
+<p>A decisão de prosseguir com o preenchimento do questionário será considerada como consentimento à participação da pesquisa. É recomendado que você armazene uma cópia deste Termo de Consentimento Livre e Esclarecido(TCLE).</p>
+<p>Para maiores esclarecimentos sobre a pesquisa, gentileza entrar em contato com:</p>
+<p>Kênia Carolina Gonçalves, pelo e-mail keniacarolina@dcc.ufmg.br ou Profa. Jussara Marques de Almeida, pelo telefone (31) 3409-5860, endereço Av. Antônio Carlos, 6627 – Prédio do ICEx Pampulha, Belo Horizonte - MG, CEP: 31270-901 e/ou pelo e- mail jussara@dcc.ufmg.br</p>
+<p>Em caso de dúvidas sobre questões éticas, entrar em contato com:</p>
+<p>Comitê de Ética em Pesquisa (CEP-UFMG), endereço: AV. Presidente Antônio Carlos, 6627, Pampulha - Belo Horizonte - MG - CEP 31270-901 - Unidade Administrativa II - 2o Andar - Sala: 2005, Telefone: (31) 3409-4592 / Email: coep@prpq.ufmg.br</p>
+`;
+
 function renderIntro(next,label){
   S.view="intro";
+  const tcle = h("div",{class:"tcle"}); tcle.innerHTML = TCLE_HTML;   // texto estático e confiável (docx do projeto)
   const body = h("div",{class:"card intro"},
-    h("h1",{},"Antes de começar"),
-    h("p",{},"As mensagens que você vai ler foram coletadas do chat ao vivo da Twitch (",
-      h("a",{href:"https://www.twitch.tv",target:"_blank",rel:"noopener"},"twitch.tv"),
-      "). O chat é público e acontece em tempo real, enquanto as pessoas assistem às transmissões."),
-    h("h2",{},"Considere o contexto"),
-    h("p",{},"Leia cada mensagem como ela seria lida no chat: são textos curtos e informais, em português, com gírias, abreviações, memes, ironia, erros de grafia e expressões próprias da plataforma. Interprete o sentido pretendido, não só as palavras soltas."),
-    h("h2",{},"Os rótulos"),
-    h("p",{},"Cada mensagem aparece com um rótulo, tirado do ClassInd, o guia brasileiro de classificação indicativa. Cada rótulo tem um nome, uma descrição que define a situação e um exemplo. Em cada tela, leia a descrição e o exemplo do rótulo antes de responder."),
-    h("h2",{},"O que você vai fazer"),
-    h("p",{},"Para cada mensagem, indique o quanto você concorda que o rótulo apresentado descreve corretamente a mensagem, de 1 (discordo totalmente) a 5 (concordo totalmente). Para decidir:"),
-    h("ul",{},
-      h("li",{},"Mencionar o tema do rótulo não basta. A mensagem deve expressar, de forma explícita ou implícita, a situação descrita no rótulo."),
-      h("li",{},"Os exemplos ilustram a definição e não esgotam as situações possíveis.")),
-    h("p",{class:"hint"},"Suas respostas são salvas na hora. Você pode voltar e mudar qualquer resposta."),
+    h("h1",{},"Termo de Consentimento Livre e Esclarecido (TCLE) e instruções"),
+    tcle,
     h("div",{class:"row"},h("button",{class:"btn primary",id:"intro-ok",onclick:next},label||"Voltar")));
   $app.replaceChildren(h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")))),body);
   window.scrollTo(0,0);
@@ -268,7 +304,7 @@ function renderItem(){
   const topbar = h("div",{class:"topbar"},
     h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},`${S.ann.nome} · ${done}/${n} respondidos`)),
       h("div",{class:"row"},
-        h("button",{class:"linkbtn",onclick:()=>renderIntro(renderItem,"Voltar às mensagens")},"Ver instruções"),
+        h("button",{class:"linkbtn",onclick:()=>renderIntro(renderItem,"Voltar às mensagens")},"Ver TCLE com instruções"),
         h("button",{class:"linkbtn",onclick:()=>renderPeople()},"Trocar de pessoa"))),
     h("div",{class:"progress"},h("i",{style:`width:${n?100*done/n:0}%`})));
   if(!n){ $app.replaceChildren(topbar,h("div",{class:"card empty"},h("p",{class:"lead"},"Ainda não há itens para você. Avise quem coordena o projeto."))); return; }
@@ -279,7 +315,7 @@ function renderItem(){
     h("div",{},h("div",{class:"sec"},`Mensagem · ${S.idx+1} de ${n}`),h("div",{class:"msg"},it.m)),
     h("div",{class:"rotulo"},h("div",{class:"sec",style:"margin:0"},"Rótulo"),
       h("div",{class:"term"},lab.name), defs));
-  const answer = h("div",{},h("p",{class:"q"},"O rótulo acima descreve corretamente esta mensagem."),
+  const answer = h("div",{},h("p",{class:"q"},"O rótulo acima classifica corretamente a mensagem apresentada."),
     h("p",{class:"hint",style:"margin:-4px 0 10px"},"Indique o quanto você concorda com a afirmação. Atalho: teclas 1 a 5."),
     h("div",{class:"likert",role:"radiogroup","aria-label":"Concordância"},
       LIKERT.map(([v,t])=>h("button",{class:"lk lk"+v+(cur===v?" on":""),role:"radio","aria-checked":cur===v?"true":"false",onclick:()=>answer_(v)},h("b",{},String(v)),h("span",{},t)))));
@@ -290,7 +326,7 @@ function renderItem(){
   $app.replaceChildren(...[topbar,fin,card,answer,nav].filter(Boolean)); window.scrollTo(0,0);
 }
 
-const LIKERT=[[1,"Discordo totalmente"],[2,"Discordo"],[3,"Nem concordo nem discordo"],[4,"Concordo"],[5,"Concordo totalmente"]];
+const LIKERT=[[1,"Discordo totalmente"],[2,"Discordo parcialmente"],[3,"Nem concordo nem discordo"],[4,"Concordo parcialmente"],[5,"Concordo totalmente"]];
 function statusText(){
   const it=S.mine[S.idx], np=S.pending.length;
   return S.saveErr || (np?"enviando…":(it&&S.resp.has(it.i)?"resposta salva":""));
