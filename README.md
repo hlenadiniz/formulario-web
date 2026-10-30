@@ -1,189 +1,43 @@
-# KIDS · Rotulação humana
+# KIDS · Rotulação humana de mensagens da Twitch
 
-Formulário estático (Vercel ou GitHub Pages) + Supabase para guardar as respostas. Escala Likert de 1 a 5 ("o rótulo descreve corretamente esta mensagem?").
+Formulário web para que pessoas avaliem se o rótulo atribuído a uma mensagem de chat da Twitch realmente descreve o que a mensagem diz. O trabalho faz parte da pesquisa **"Crianças e Adolescentes em Plataformas de Mídias Sociais: Perigos, Desafios e Oportunidades"**, do Departamento de Ciência da Computação da UFMG, sob coordenação da profa. Jussara M. Almeida.
 
-## Como a pessoa usa
+## Objetivo
 
-1. Abre a página e **clica no próprio nome** (os nomes são botões, abertos a todos).
-2. Na primeira vez que entra (por aparelho), vê as **instruções**. Depois pode relê-las em "Ver instruções".
-3. Vai para as perguntas dela: na primeira vez, a primeira pergunta; se já respondeu algumas, **a primeira ainda sem resposta**. Pode voltar e mudar respostas; "Trocar de pessoa" volta à lista de nomes.
+Plataformas de mídias sociais expõem crianças e adolescentes a conteúdos inapropriados, como violência, drogas, discurso de ódio e conteúdo sexual. Para detectar esses riscos automaticamente, é preciso antes saber **o que conta como risco** e **como nomeá-lo**. A pesquisa parte dos rótulos do **ClassInd**, o guia brasileiro de Classificação Indicativa, que foi pensado para obras audiovisuais (filmes, jogos, programas). A pergunta deste projeto é: esses rótulos funcionam quando aplicados a mensagens curtas de texto, escritas de forma informal em chats ao vivo?
 
-O progresso fica no Supabase (por anotador), então vale em qualquer aparelho. Como não há senha, quem abre a página pode responder em nome de qualquer um: o desenho assume um grupo de confiança.
+Para responder, mensagens reais e públicas da Twitch, em português, foram associadas a rótulos do ClassInd, e pessoas avaliam, uma a uma, se a associação está correta. Essas avaliações servem para adaptar os rótulos ao contexto das redes sociais, construir uma taxonomia de riscos e danos e, depois, treinar e testar métodos de detecção.
 
-## Quem recebe o quê
+## O que a pessoa faz
 
-- **Anotador comum:** cada item da amostra vai para exatamente **um** anotador comum. Quem tem `meta` recebe exatamente essa quantidade (ex.: Barbara e Daniel, 950 cada); os demais dividem o **restante** em partes iguais (±1).
-- **Validador (Kênia e Helena):** cada item vai também para exatamente **um** validador, sem `meta`: cada uma recebe **metade** do total (metades disjuntas) e não entra na divisão dos anotadores comuns.
-- **Itens especiais** (controle): importados com `--especial`, ficam misturados aos demais, distribuídos proporcionalmente às cotas, e o anotador **não vê** nenhuma marca. A coluna `especial` só aparece na tabela `respostas` exportada.
-- A ordem das perguntas é embaralhada e fixa para cada pessoa.
+1. **Lê o TCLE e as instruções** (Termo de Consentimento Livre e Esclarecido) e, concordando, clica em "Concordo com o TCLE e desejo prosseguir".
+2. **Escolhe o próprio nome** na lista. Não há senha nem cadastro: o progresso fica guardado e a pessoa pode parar e continuar depois, em qualquer aparelho, de onde parou.
+3. **Responde uma mensagem por vez.** A tela mostra a mensagem, o rótulo do ClassInd e a descrição e o exemplo desse rótulo. Em seguida a pessoa indica o quanto concorda que *o rótulo classifica corretamente a mensagem apresentada*, em uma escala de cinco pontos, de "discordo totalmente" a "concordo totalmente".
 
-## 1. Supabase (uma vez)
+A tarefa é avaliar o conteúdo da mensagem, não julgar quem a escreveu. Nenhuma resposta é obrigatória, e a pessoa pode pausar ou encerrar a qualquer momento.
 
-1. Crie um projeto em supabase.com.
-2. SQL Editor > New query: cole `supabase.sql` e clique em Run. (Se houver tabelas de uma versão anterior, apague-as antes: o comando está no topo do arquivo. Atenção: apaga as respostas de teste.)
-3. Copie para `config.js` a **Project URL** e a **Publishable key** `sb_publishable_...`. Nunca use a Secret key no site.
+## Como as mensagens são distribuídas
 
-## 2. Anotadores
+- **Cada mensagem é avaliada por duas pessoas diferentes.** Isso permite comparar as respostas e medir o quanto as pessoas concordam entre si. A segunda pessoa é sempre a mesma para cada responsável, em duplas ou trincas fixas, e as respostas ficam registradas como 1ª e 2ª leitura.
+- **A carga de trabalho é combinada com cada anotador:** uma parte da equipe responde a mais mensagens, e as demais dividem o restante de forma equilibrada.
+- **A ordem é embaralhada.** Cada pessoa vê as suas mensagens em ordem aleatória, e os rótulos aparecem misturados.
+- **Há mensagens de controle.** Uma parte da amostra (200 mensagens) recebeu um rótulo escolhido ao acaso, porque as mensagens originais não tinham rótulo. Elas são entregues junto com as demais, sem nenhuma indicação para quem responde, e ficam marcadas no banco. Servem para verificar se as pessoas estão avaliando com atenção.
+- **Validação futura.** Duas pessoas da equipe de pesquisa (Kênia e Helena) foram reservadas para validar, mais adiante, as avaliações dos anotadores. Por enquanto elas não recebem mensagens.
 
-No SQL Editor (nomes aparecem como botões; `validador = true` só para Kênia e Helena; `meta` = cota fixa, vazio = divide o restante):
+## A amostra
 
-```sql
-insert into public.anotadores (nome, validador, meta) values
-  ('Kênia', true, null), ('Helena', true, null),
-  ('Barbara', false, 950), ('Daniel', false, 950),
-  ('Murilo', false, null), ('Sophia', false, null), ('Jean', false, null),
-  ('Alexandre', false, null), ('Lucas', false, null), ('Kayke', false, null);
-```
+São 3.290 mensagens: 3.090 com rótulo atribuído pelo processo da pesquisa, em 40 rótulos do ClassInd, e 200 mensagens de controle. As mensagens foram anonimizadas: **não há nome de usuário nem outro dado que identifique quem escreveu**.
 
-Para tirar alguém da lista: `update public.anotadores set ativo = false where nome = 'Jean';`
+## Privacidade
 
-## 3. Amostra
+As mensagens da amostra **não ficam no site nem no repositório público**. Elas ficam apenas no banco de dados, e cada pessoa recebe somente as mensagens que lhe foram atribuídas. As respostas não pedem dados pessoais. O repositório contém apenas o código do formulário e as descrições públicas dos rótulos do ClassInd.
 
-CSVs em `data/` com rótulo e mensagem (`rotulo`/`Label` e `message_content`/`Examples`; opcional `persona`). **Sem nomes de usuário**: a amostra não vai para o GitHub (`.gitignore`) e fica só no Supabase.
+## O que se obtém no final
 
-```bash
-python3 scripts/importar_amostra.py data/amostra_final.csv --sql                    # gera data/importar_amostra_final.sql
-python3 scripts/importar_amostra.py data/amostra_especial.csv --sql --especial      # itens especiais
-```
+Uma tabela com todas as respostas, indicando para cada mensagem: o rótulo, quem respondeu, a nota de 1 a 5, se foi a 1ª ou a 2ª leitura e se era uma mensagem de controle. Também há uma visão com **uma linha por mensagem**, com as duas respostas lado a lado e a diferença entre elas, pronta para a análise de concordância.
 
-Cole cada `.sql` gerado no SQL Editor. Também dá para enviar direto pela API (`SUPABASE_URL` e `SUPABASE_SECRET_KEY` no ambiente, sem `--sql`). Linhas repetidas (mesmo rótulo e mensagem) são ignoradas, então **dá para reimportar a amostra expandida**: entram só os casos novos.
+## Como funciona por dentro
 
-`data/rotulos.csv` (colunas `Label`, `Description`, `Examples`) é público e vai para o site.
+O formulário é uma página estática, publicada no GitHub Pages, que conversa diretamente com um banco no **Supabase**. O banco guarda as mensagens, a lista de anotadores, a divisão do trabalho e as respostas. A página só consegue ler as mensagens da pessoa que escolheu o próprio nome e gravar as respostas dela.
 
-## 4. Distribuir os itens
-
-Cada item é atribuído a **2 anotadores comuns diferentes**. Validadores (Kênia e Helena) ficam fora desta etapa. A distribuição segue cotas por pessoa, com os itens especiais divididos separadamente, e cada atribuição fica registrada em `atribuicoes`.
-
-### 4.1 Importar os itens
-
-As duas fontes (`msgs` e `msgs_sem_rotulo`, ambas com `"Label"` e `"Examples"`) são unidas sem duplicatas:
-
-```sql
-begin;
-truncate public.itens restart identity cascade;  -- apaga também atribuicoes e respostas
-
-insert into public.itens (message_content, rotulo)
-select "Examples", "Label" from public.msgs
-union
-select "Examples", "Label" from public.msgs_sem_rotulo;
-commit;
-```
-
-### 4.2 Estrutura de rastreio
-
-```sql
--- quando e em qual sorteio cada item foi atribuído; índice para contar por item
-alter table public.atribuicoes
-  add column if not exists lote text,
-  add column if not exists atribuido_em timestamptz not null default now();
-create index if not exists atribuicoes_item_idx on public.atribuicoes (item);
-
--- itens especiais = os de msgs_sem_rotulo
-alter table public.itens add column if not exists especial boolean not null default false;
-update public.itens i set especial = true
-from public.msgs_sem_rotulo s
-where i.message_content = s."Examples" and i.rotulo = s."Label";
-```
-
-A PK `(anotador, item)` de `atribuicoes` indica quem recebeu qual item e impede a mesma pessoa duas vezes no mesmo item.
-
-### 4.3 Cotas por anotador
-
-Tabela `cotas (anotador, normais, especiais)`. Os valores abaixo somam 6.580 atribuições (3.290 itens × 2):
-
-| Anotador                  | Normais | Especiais | Total |
-| ------------------------- | ------- | --------- | ----- |
-| Bárbara, Daniel          | 1.784   | 116       | 1.900 |
-| Murilo, Sophia, Alexandre | 436     | 28        | 464   |
-| Jean, Lucas               | 435     | 28        | 463   |
-| Caike                     | 434     | 28        | 462   |
-
-```sql
-create table if not exists public.cotas (
-  anotador  int primary key references public.anotadores(id),
-  normais   int not null,
-  especiais int not null
-);
-alter table public.cotas enable row level security;  -- sem policy: não exposta pela API
-```
-
-Para ajustar uma cota: `update public.cotas set normais = 500 where anotador = <id>;`
-
-### 4.4 Funções e trava
-
-Definidas em `sql/` (ver arquivos):
-
-- `limita_dois_comuns()` + trigger `trg_limita_dois_comuns`: bloqueia um 3º anotador comum no mesmo item.
-- `sortear_itens(semente, redistribuir default false)`: completa cada item até ter 2 comuns diferentes, respeitando as cotas. A semente torna o sorteio reproduzível.
-- `progresso()`: por pessoa, `atribuidos`, `especiais`, `respondidos`, `pendentes`, `cota_total` e `cota_especiais`.
-
-### 4.5 Executar
-
-```sql
-select public.sortear_itens('uma-semente');         -- completa só o que falta (itens com menos de 2 comuns)
-select public.sortear_itens('uma-semente', true);   -- solta os NÃO respondidos de todos os comuns e refaz
-select public.progresso();                          -- atribuídos, especiais, respondidos e pendentes
-```
-
-O retorno deve ter `vagas_sem_anotador: 0` e `cota_sobrando: 0`. Respostas já dadas e atribuições dos validadores nunca são alteradas.
-
-### 4.6 Conferências
-
-```sql
--- todo item com exatamente 2 comuns (esperado: nenhuma linha)
-select i.item, count(*) filter (where not a.validador) as comuns
-from public.itens i
-left join public.atribuicoes t on t.item = i.item
-left join public.anotadores a on a.id = t.anotador
-group by i.item
-having count(*) filter (where not a.validador) <> 2;
-
--- total e especiais por pessoa contra a cota
-select a.nome, count(*) as total, count(*) filter (where i.especial) as especiais,
-       c.normais + c.especiais as cota_total, c.especiais as cota_esp
-from public.atribuicoes t
-join public.anotadores a on a.id = t.anotador
-join public.itens i on i.item = t.item
-join public.cotas c on c.anotador = a.id
-group by a.nome, c.normais, c.especiais
-order by total desc;
-```
-
-### 4.7 Anotador que não respondeu
-
-Solta os pendentes da pessoa, desativa e redistribui só o que ficou com menos de 2:
-
-```sql
-delete from public.atribuicoes t using public.anotadores a
-where a.id = t.anotador and a.nome = 'Jean'
-  and not exists (select 1 from public.respostas x
-                  where x.anotador = t.anotador and x.item = t.item);
-
-update public.anotadores set ativo = false where nome = 'Jean';
-
--- aumente a cota de quem vai absorver (as cotas estão cheias)
-update public.cotas set normais = normais + 100
-where anotador in (select id from public.anotadores where nome in ('Murilo', 'Sophia'));
-
-select public.sortear_itens('seed-2');
-```
-
-Se `vagas_sem_anotador` vier maior que 0, faltou cota: aumente e rode de novo.
-
-### 4.8 Rastrear
-
-```sql
-select * from public.atribuicoes where item = 123;   -- quem recebeu, em qual lote e quando
-```
-
-Pendente = atribuição sem linha correspondente em `respostas`.
-
-> `itens.rotulo` e `itens.especial` são gabarito/controle e não devem ser exibidos ao anotador.
-
-## 5. Publicar
-
-Envie `index.html`, `config.js`, `data/rotulos.csv` (e `scripts/`, `supabase.sql`) ao GitHub e ative Pages (branch `main`, raiz). Mande o link às pessoas.
-
-## 6. Baixar as respostas
-
-Supabase > Table Editor > `respostas` > Export > CSV. Colunas: `anotador, anotador_nome, validador, item, persona, especial, mensagem, rotulo, resposta (1 a 5), atualizado_em`. `especial = true` marca os itens de controle.
+Detalhes técnicos de instalação, importação da amostra e distribuição das mensagens estão em [README.md](README.md) e nos arquivos da pasta `sql/`.
