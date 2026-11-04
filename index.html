@@ -172,8 +172,11 @@ const RPC = CFG.SUPABASE_URL.replace(/\/+$/,"").replace(/\/rest\/v1$/,"") + "/re
 const HDR = { apikey:CFG.SUPABASE_ANON_KEY, "Content-Type":"application/json" };
 // Chave nova (sb_publishable_...) vai só em "apikey"; a antiga (JWT, eyJ...) também em Authorization.
 if (/^eyJ/.test(CFG.SUPABASE_ANON_KEY)) HDR.Authorization = "Bearer " + CFG.SUPABASE_ANON_KEY;
-async function rpc(fn, body){
-  const r = await fetch(RPC+fn, {method:"POST", headers:HDR, body:JSON.stringify(body)});
+// Rodada 2 (nova amostra, tabelas *_r2): abre-se com ?rodada=2 no endereço. Sem isso, é a rodada 1.
+const RODADA = new URLSearchParams(location.search).get("rodada")==="2" ? "_r2" : "";
+const TAG = "validação de rótulos" + (RODADA ? " · rodada 2" : "");
+async function rpc(fn, body, suf=RODADA){
+  const r = await fetch(RPC+fn+suf, {method:"POST", headers:HDR, body:JSON.stringify(body)});
   if(!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
 }
@@ -205,7 +208,7 @@ async function renderPeople(msg){
     h("div",{class:"row"},h("button",{class:"btn primary",onclick:()=>renderPeople()},"Tentar de novo")))); }
   flush();
   $app.replaceChildren(
-    h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")),
+    h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},TAG)),
       h("button",{class:"linkbtn",onclick:()=>renderIntro(()=>renderPeople(),"Voltar")},"Ver TCLE com instruções"))),
     h("div",{class:"card login"},
       h("h1",{},"Quem é você?"),
@@ -228,7 +231,7 @@ function startAnnotating(d){
   S.ann=d.anotador; S.saveErr=null;
   S.mine = d.itens.map(x=>({i:x.item,m:x.mensagem,l:x.rotulo,p:x.persona}));
   S.resp = new Map(d.respostas.map(r=>[r.item,r.resposta]));
-  for(const p of S.pending) if(p.a===S.ann.id) S.resp.set(p.item,p.resposta);
+  for(const p of S.pending) if(p.a===S.ann.id&&(p.rd||"")===RODADA) S.resp.set(p.item,p.resposta);
   // 3. primeira vez: primeira pergunta; senão, a primeira ainda sem resposta (onde parou)
   const first = S.mine.findIndex(x=>!S.resp.has(x.i));
   S.idx = first<0 ? 0 : first;
@@ -288,7 +291,7 @@ function renderIntro(next,label){
     h("h1",{},"Termo de Consentimento Livre e Esclarecido (TCLE) e instruções"),
     tcle,
     h("div",{class:"row"},h("button",{class:"btn primary",id:"intro-ok",onclick:next},label||"Voltar")));
-  $app.replaceChildren(h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},"validação de rótulos")))),body);
+  $app.replaceChildren(h("div",{class:"topbar"},h("div",{class:"bar-row"},h("div",{class:"brand"},"KIDS",h("small",{},TAG)))),body);
   window.scrollTo(0,0);
 }
 
@@ -342,8 +345,8 @@ function go(i){ S.idx=Math.max(0,Math.min(S.mine.length-1,i)); renderItem(); }
 function answer_(r){
   const it=S.mine[S.idx]; if(!it) return;
   S.resp.set(it.i,r); S.saveErr=null;
-  S.pending = S.pending.filter(p=>!(p.a===S.ann.id&&p.item===it.i));
-  S.pending.push({a:S.ann.id,item:it.i,resposta:r});
+  S.pending = S.pending.filter(p=>!(p.a===S.ann.id&&(p.rd||"")===RODADA&&p.item===it.i));
+  S.pending.push({a:S.ann.id,rd:RODADA,item:it.i,resposta:r});
   ls.set("kids_pending",JSON.stringify(S.pending));
   const wasIdx=S.idx, next=S.idx<S.mine.length-1?S.idx+1:S.idx;
   renderItem(); flush();
@@ -354,8 +357,8 @@ async function flush(){
   if(S.flushing||!S.pending.length) return; S.flushing=true;
   try{
     while(S.pending.length){
-      const who=S.pending[0].a, batch=S.pending.filter(p=>p.a===who).slice(0,50);
-      await rpc("salvar",{p_anotador:who,p_respostas:batch.map(p=>({item:p.item,resposta:p.resposta}))});
+      const first=S.pending[0], batch=S.pending.filter(p=>p.a===first.a&&(p.rd||"")===(first.rd||"")).slice(0,50);
+      await rpc("salvar",{p_anotador:first.a,p_respostas:batch.map(p=>({item:p.item,resposta:p.resposta}))}, first.rd||"");
       S.pending = S.pending.filter(p=>!batch.includes(p));
       ls.set("kids_pending",JSON.stringify(S.pending));
     }
