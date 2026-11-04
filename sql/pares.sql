@@ -38,6 +38,11 @@ alter table public.atribuicoes add column if not exists leitura smallint check (
 create unique index if not exists atribuicoes_item_leitura_uq on public.atribuicoes (item, leitura) where leitura is not null;
 
 alter table public.respostas   add column if not exists leitura smallint;                           -- copiado de atribuicoes ao salvar
+-- colunas que a função salvar() grava (já existem se o supabase.sql foi rodado; aqui por garantia)
+alter table public.respostas   add column if not exists anotador_nome text;
+alter table public.respostas   add column if not exists validador boolean;
+alter table public.respostas   add column if not exists persona text;
+alter table public.respostas   add column if not exists especial boolean;
 
 -- 3. Configuração das pessoas. Soma das metas = nº de itens (3.290).
 update public.anotadores set ativo = false;                        -- todos fora da lista; só os 8 abaixo voltam (Kênia, Helena, Maria, João ficam de fora)
