@@ -40,4 +40,23 @@ Uma tabela com todas as respostas, indicando para cada mensagem: o rótulo, quem
 
 O formulário é uma página estática, publicada no GitHub Pages, que conversa diretamente com um banco no **Supabase**. O banco guarda as mensagens, a lista de anotadores, a divisão do trabalho e as respostas. A página só consegue ler as mensagens da pessoa que escolheu o próprio nome e gravar as respostas dela.
 
-Detalhes técnicos de instalação, importação da amostra e distribuição das mensagens estão em [README.md](README.md) e nos arquivos da pasta `sql/`.
+Os arquivos SQL de cada rodada estão na pasta `sql/` (instruções na seção abaixo).
+
+## Rodadas de anotação
+
+Cada rodada usa a mesma página, mas dados separados. Uma rodada nova **não altera** as anteriores: tem tabelas e funções próprias, com o sufixo `_r2`, `_r3` etc.
+
+| Rodada | Endereço | Quem anota | SQL |
+|---|---|---|---|
+| 1 | `.../formulario-web/` | oito anotadores em pares fixos | `sql/pares.sql` |
+| 2 | `.../formulario-web/?rodada=2` | Helena e Daniel | `sql/rodada2.sql` |
+| 3 | `.../formulario-web/?rodada=3` | Helena e Daniel | `sql/rodada3.sql` |
+
+Nas rodadas 2 e 3, cada mensagem é respondida pelas duas pessoas (uma como 1ª leitura e a outra como 2ª), em metades equilibradas. Para abrir uma rodada nova, a ordem no Supabase (SQL Editor) é:
+
+1. Rode `sql/rodadaN.sql` (cria as tabelas e cadastra os anotadores; pode rodar de novo sem apagar dados).
+2. Gere o SQL de importação com `python3 scripts/importar_amostra.py data/amostra_rodadaN.csv --sql --tabela itens_rN` e rode o arquivo gerado (`data/importar_amostra_rodadaN.sql`, que não vai para o GitHub).
+3. Distribua com `select public.sortear_itens_rN('rodadaN');` e confira com `select public.progresso_rN();`.
+4. Para baixar as respostas: tabela `respostas_rN` ou a visão `respostas_pares_rN` (uma linha por mensagem, com as duas respostas lado a lado).
+
+Uma rodada nova precisa de um novo `sql/rodadaN.sql` (copie o da rodada anterior e troque o sufixo) e de uma entrada em `choices` no `scripts/importar_amostra.py`. A página já aceita `?rodada=2` a `?rodada=9`.

@@ -172,9 +172,10 @@ const RPC = CFG.SUPABASE_URL.replace(/\/+$/,"").replace(/\/rest\/v1$/,"") + "/re
 const HDR = { apikey:CFG.SUPABASE_ANON_KEY, "Content-Type":"application/json" };
 // Chave nova (sb_publishable_...) vai só em "apikey"; a antiga (JWT, eyJ...) também em Authorization.
 if (/^eyJ/.test(CFG.SUPABASE_ANON_KEY)) HDR.Authorization = "Bearer " + CFG.SUPABASE_ANON_KEY;
-// Rodada 2 (nova amostra, tabelas *_r2): abre-se com ?rodada=2 no endereço. Sem isso, é a rodada 1.
-const RODADA = new URLSearchParams(location.search).get("rodada")==="2" ? "_r2" : "";
-const TAG = "validação de rótulos" + (RODADA ? " · rodada 2" : "");
+// Rodadas extras (tabelas *_r2, *_r3...): abrem-se com ?rodada=2, ?rodada=3 etc. no endereço. Sem isso, é a rodada 1.
+const RODADA_N = new URLSearchParams(location.search).get("rodada")||"";
+const RODADA = /^[2-9]$/.test(RODADA_N) ? "_r"+RODADA_N : "";
+const TAG = "validação de rótulos" + (RODADA ? " · rodada "+RODADA_N : "");
 async function rpc(fn, body, suf=RODADA){
   const r = await fetch(RPC+fn+suf, {method:"POST", headers:HDR, body:JSON.stringify(body)});
   if(!r.ok) throw new Error("HTTP "+r.status);
